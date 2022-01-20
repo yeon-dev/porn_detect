@@ -1,4 +1,5 @@
 #include "HTTPFilter.h"
+#include "DBManager.h"
 
 void
 hexdump(
@@ -42,7 +43,17 @@ hexdump(
 	std::cout << std::dec;
 }
 
-HTTPFilter::HTTPFilter() : all_devices(nullptr), selected_device(nullptr) { }
+ULONGLONG get_current_timestamp() {
+	const auto p1 = std::chrono::system_clock::now();
+	return std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count();
+}
+
+HTTPFilter::HTTPFilter() : all_devices(nullptr), selected_device(nullptr), 
+	instance(DBManager::instance()), dbname("test.db"), table_nm("traffics") {
+	// Initialize codes here
+	filter_db_initialize();
+}
+
 HTTPFilter::~HTTPFilter() {
 	if (this->all_devices != nullptr) {
 		try {
@@ -55,6 +66,16 @@ HTTPFilter::~HTTPFilter() {
 			fprintf(stderr, "Exception occured with unknown exception\n");
 		}
 	}
+}
+
+void HTTPFilter::filter_db_initialize() {
+	vector<pair<string, string>> columns = {
+		{"uri", "text"}, {"last_access", "int not null"}, {"count", "int not null"}
+	};
+	if (!instance.check_table_exists(table_nm.c_str())) {
+		instance.create_table_with_name(table_nm.c_str(), columns);
+	}
+	return;
 }
 
 vector<double> HTTPFilter::capture_traffic(u_int timeout, string adapter) {
@@ -144,12 +165,56 @@ vector<PCOLUMN_INFO> HTTPFilter::get_http_traffics() {
 				// cout << header << endl;
 				if ((position = header.find("Host: ")) != string::npos && position == 0) {
 					header.erase(0, position + 6);
-					cout << header << endl;
+					string url = header;
+					if (check_url_exists(url)) {
+						// if this url exists, just update url data
+						bool res = update_url_info(url);
+					}
+					else {
+						// if this url does not exists, insert new record
+						bool res = push_new_url(url);
+						if (res == false) {
+							fprintf(stderr, "Something errors on insert operation\n");
+						}
+					}
+					getchar();
 				}
 			}
-			getchar();
 		}
 	}
+}
+
+int HTTPFilter::get_url_count(const string& uri) {
+	return 0;
+}
+
+bool HTTPFilter::update_url_info(const string& uri) {
+	return true;
+}
+
+bool HTTPFilter::push_new_url(const string& uri) {
+	string table_nm = "traffics";
+	vector<string> column_nm = { "uri", "last_access", "count" };
+	vector<string> values = { "'" + uri + "'", to_string(get_current_timestamp()), "0" };
+
+	if (!instance.insert(table_nm, column_nm, values)) {
+		fprintf(stderr, "Something errors on insert operation\n");
+		return false;
+	}
+	return true;
+}
+
+bool HTTPFilter::check_url_exists(const string& uri) {
+	string target = "count(*)";
+	vector<string> whereClause = { "uri='" + uri + "'" };
+	string table_nm = "traffics";
+
+	int count = atoi(instance.select<char*>(table_nm, target, whereClause));
+
+	if (count >= 1) {
+		return true;
+	}
+	return false;
 }
 
 bool HTTPFilter::check_http_method(const char* pkt_body) const {

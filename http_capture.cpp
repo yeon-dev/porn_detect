@@ -30,10 +30,10 @@ int main() {
 
 	// result = capture_traffic(time);
 	// write_to_file(result);
-	// HTTPFilter* filter = new HTTPFilter();
-	// filter->capture_traffic(1000, "Ethernet");
+	HTTPFilter* filter = new HTTPFilter();
+	filter->capture_traffic(1000, "Ethernet");
 
-	// delete filter;
-	db_test();
+	delete filter;
+	// db_test();
 	return 0;
 }

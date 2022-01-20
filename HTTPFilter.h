@@ -4,10 +4,14 @@
 #include <vector>
 #include <unordered_map>
 #include <iomanip>
+#include <chrono>
+#include <string>
 
 // #include <Windows.h>
 #include <WinSock2.h>
 #include <pcap.h>
+
+#include "DBManager.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -68,6 +72,13 @@ private:
 	unordered_map<string, string> get_adapters_address();
 	bool check_http_method(const char* pkt_body) const;
 	vector<string> parse_http_header(const char* pkt_body);
+private:
+	// database access codes
+	int get_url_count(const string& uri);
+	bool check_url_exists(const string& uri);
+	bool push_new_url(const string& uri);
+	bool update_url_info(const string& uri);
+	void filter_db_initialize();
 public:
 	void printEthernet(const Ethernet* pkt_data) const;
 	void printIPHeader(const IPHeader* pkt_data) const;
@@ -75,5 +86,9 @@ public:
 private:
 	pcap_if_t* all_devices;
 	pcap_if_t* selected_device;
+	DBManager& instance;
+private:
+	const string& dbname;
+	const string& table_nm;
 };
 

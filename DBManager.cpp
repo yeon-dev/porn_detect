@@ -153,3 +153,47 @@ int DBManager::insert(string& tablenm, vector<string>& column_nm, vector<string>
 	fprintf(stdout, "Insert rows successfully\n");
 	return 1;
 }
+
+int DBManager::update(string& tablenm, vector<string>& column_nm, vector<string>& values, vector<string>& whereClause) {
+	char* zErrMsg = 0;
+	string delimiter = ",";
+
+	if (db == nullptr) {
+		fprintf(stderr, "Can't load database instance\n");
+		return 0;
+	}
+
+	string set_part;
+	for (int idx = 0; idx < column_nm.size(); idx++) {
+		if (set_part.empty()) {
+			set_part += column_nm[idx] + "=" + values[idx];
+		}
+		else {
+			set_part += ", ";
+			set_part += column_nm[idx] + "=" + values[idx];
+		}
+	}
+	string where_part;
+	if (whereClause.size() >= 1) {
+		where_part += " WHERE ";
+		for_each(whereClause.begin(), whereClause.end(),
+			[&where_part, &whereClause](const string& clause) {
+				if (clause == *whereClause.begin())
+					where_part += clause;
+				else
+					where_part += " AND " + clause;
+			}
+		);
+	}
+	string query = "UPDATE " + tablenm + " SET " + set_part + where_part + ";";
+	cout << query << endl;
+
+	sqlite3_stmt* res;
+	int rc = sqlite3_exec(db, query.c_str(), nullptr, 0, &zErrMsg);
+	if (rc != SQLITE_OK) {
+		fprintf(stderr, "Update rows failed: %s\n", zErrMsg);
+		return 0;
+	}
+	fprintf(stdout, "Update rows successfully\n");
+	return 1;
+}

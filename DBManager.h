@@ -26,6 +26,7 @@ public:
 	bool check_table_exists(const char* table_nm);
 	int create_table_with_name(const char* table_nm, vector<pair<string, string>>& columns);
 	int insert(string& tablenm, vector<string>& column_nm, vector<string>& values);
+	int update(string& tablenm, vector<string>& column_nm, vector<string>& values, vector<string>& whereClause);
 
 	template<typename T> T select(string& tablenm, string& target, vector<string>& whereClause);
 private:
